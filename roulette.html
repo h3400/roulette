@@ -6,122 +6,116 @@
 <title>Roulette</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{width:100%;height:100%;background:#0a3d1f;font-family:Georgia,serif;user-select:none;overflow:hidden;}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a3d1f;font-family:Georgia,serif;user-select:none;}
 
-#rotate-msg{display:none;position:fixed;inset:0;background:#0a3d1f;color:#f0d060;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-size:20px;text-align:center;z-index:999;padding:20px;}
-@media(orientation:portrait){#rotate-msg{display:flex;}#game{display:none;}}
+#rotate{display:none;position:fixed;inset:0;background:#0a3d1f;color:#f0d060;flex-direction:column;align-items:center;justify-content:center;font-size:20px;text-align:center;gap:12px;z-index:9;}
+@media(orientation:portrait){#rotate{display:flex;}#game{display:none;}}
 
-#game{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:row;gap:6px;padding:6px;overflow:hidden;}
+/* Game is a fixed full-screen flex row */
+#game{position:fixed;inset:0;display:flex;flex-direction:row;padding:5px;gap:5px;}
 
-#left-col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;flex-shrink:0;}
-#wheel-wrap{position:relative;}
+/* Left column: wheel canvas + spin button */
+#lcol{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;flex-shrink:0;}
+#wheel-wrap{position:relative;flex-shrink:0;}
 #wc,#bc{display:block;border-radius:50%;}
 #bc{position:absolute;top:0;left:0;pointer-events:none;}
-#spin-btn{background:#f0d060;color:#1a0a00;border:none;border-radius:20px;font-family:Georgia,serif;font-weight:bold;font-size:14px;cursor:pointer;letter-spacing:1px;padding:10px 0;display:block;-webkit-appearance:none;}
-#spin-btn:disabled{background:#555;color:#888;}
+#spinbtn{background:#f0d060;color:#1a0a00;border:none;border-radius:20px;font-family:Georgia,serif;font-weight:bold;font-size:14px;letter-spacing:1px;padding:9px 0;cursor:pointer;display:block;-webkit-appearance:none;}
+#spinbtn:disabled{background:#555;color:#888;}
 
-#right-col{flex:1;display:flex;flex-direction:column;gap:4px;overflow:hidden;min-width:0;}
-#info-row{display:flex;gap:4px;flex-shrink:0;}
-.sbox{background:rgba(0,0,0,0.5);border:1px solid #1a6635;border-radius:6px;padding:4px 6px;text-align:center;flex:1;min-width:0;}
-.slabel{color:#7ab890;font-size:9px;letter-spacing:1px;text-transform:uppercase;}
-.sval{color:#f0d060;font-size:13px;font-weight:bold;line-height:1.2;}
-#result-box{background:rgba(0,0,0,0.5);border:1px solid #1a6635;border-radius:6px;padding:4px 8px;text-align:center;flex:2;min-width:0;}
+/* Right column: stacked UI + board */
+#rcol{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;overflow:hidden;}
+#inforow{display:flex;gap:4px;flex-shrink:0;}
+.sb{background:rgba(0,0,0,0.5);border:1px solid #1a6635;border-radius:6px;padding:3px 5px;text-align:center;flex:1;min-width:0;}
+.sl{color:#7ab890;font-size:9px;text-transform:uppercase;letter-spacing:1px;}
+.sv{color:#f0d060;font-size:13px;font-weight:bold;}
+#resbox{background:rgba(0,0,0,0.5);border:1px solid #1a6635;border-radius:6px;padding:3px 8px;text-align:center;flex:2;min-width:0;}
 #rnum{font-size:18px;font-weight:bold;color:#ccc;line-height:1.1;}
 #rmsg{color:#ccc;font-size:9px;}
-#chips-row{display:flex;gap:6px;align-items:center;flex-shrink:0;}
-.clabel{color:#7ab890;font-size:9px;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
-.chip{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,0.25);cursor:pointer;font-size:10px;font-weight:bold;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.chip.sel{border-color:#f0d060;box-shadow:0 0 8px rgba(240,208,96,0.7);}
-#clear-btn{background:rgba(180,40,40,0.85);border:1px solid #900;color:#fff;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:11px;margin-left:auto;-webkit-appearance:none;}
-#msg-bar{color:#f0d060;font-size:10px;text-align:center;flex-shrink:0;}
-#board-container{flex:1;min-height:0;position:relative;}
-#board-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:pointer;touch-action:manipulation;}
+#chiprow{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+.cl{color:#7ab890;font-size:9px;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.chip{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,0.25);cursor:pointer;font-size:10px;font-weight:bold;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.chip.sel{border-color:#f0d060;box-shadow:0 0 8px rgba(240,208,96,0.6);}
+#clrbtn{background:rgba(180,40,40,0.85);border:1px solid #900;color:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:11px;margin-left:auto;-webkit-appearance:none;}
+#msgbar{color:#f0d060;font-size:10px;text-align:center;flex-shrink:0;line-height:1.3;}
+
+/* Board wrapper fills all remaining space */
+#boardwrap{flex:1;min-height:0;position:relative;}
+/* Canvas sits inside, sized by JS to exactly match wrapper */
+#bc2{position:absolute;top:0;left:0;display:block;cursor:pointer;touch-action:manipulation;}
 </style>
 </head>
 <body>
-<div id="rotate-msg">
-  <div style="font-size:52px;">&#8635;</div>
-  Rotate your phone to landscape
-</div>
+<div id="rotate"><div style="font-size:52px">&#8635;</div>Rotate to landscape to play</div>
 <div id="game">
-  <div id="left-col">
-    <div id="wheel-wrap">
-      <canvas id="wc"></canvas>
-      <canvas id="bc"></canvas>
-    </div>
-    <button id="spin-btn" type="button">SPIN</button>
+  <div id="lcol">
+    <div id="wheel-wrap"><canvas id="wc"></canvas><canvas id="bc"></canvas></div>
+    <button id="spinbtn" type="button">SPIN</button>
   </div>
-  <div id="right-col">
-    <div id="info-row">
-      <div class="sbox"><div class="slabel">Balance</div><div class="sval" id="bal">$1000</div></div>
-      <div class="sbox"><div class="slabel">Bet</div><div class="sval" id="betval">$0</div></div>
-      <div class="sbox"><div class="slabel">Last Win</div><div class="sval" id="winval">—</div></div>
-      <div id="result-box"><div id="rnum">—</div><div id="rmsg">Place bets &amp; spin</div></div>
+  <div id="rcol">
+    <div id="inforow">
+      <div class="sb"><div class="sl">Balance</div><div class="sv" id="bal">$1000</div></div>
+      <div class="sb"><div class="sl">Bet</div><div class="sv" id="betv">$0</div></div>
+      <div class="sb"><div class="sl">Last Win</div><div class="sv" id="winv">—</div></div>
+      <div id="resbox"><div id="rnum">—</div><div id="rmsg">Place bets &amp; spin</div></div>
     </div>
-    <div id="chips-row">
-      <span class="clabel">Chip:</span>
-      <div class="chip sel" data-v="1" style="background:#555;">$1</div>
-      <div class="chip" data-v="5" style="background:#aa2222;">$5</div>
-      <div class="chip" data-v="25" style="background:#1a44aa;">$25</div>
-      <div class="chip" data-v="100" style="background:#1a7a22;">$100</div>
-      <button id="clear-btn" type="button">Clear</button>
+    <div id="chiprow">
+      <span class="cl">Chip:</span>
+      <div class="chip sel" data-v="1" style="background:#555">$1</div>
+      <div class="chip" data-v="5" style="background:#aa2222">$5</div>
+      <div class="chip" data-v="25" style="background:#1a44aa">$25</div>
+      <div class="chip" data-v="100" style="background:#1a7a22">$100</div>
+      <button id="clrbtn" type="button">Clear</button>
     </div>
-    <div id="msg-bar">Tap a square to place a bet</div>
-    <div id="board-container">
-      <canvas id="board-canvas"></canvas>
-    </div>
+    <div id="msgbar">Tap a square to place a bet</div>
+    <div id="boardwrap"><canvas id="bc2"></canvas></div>
   </div>
 </div>
 <script>
 const NUMS=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
-const numBg=n=>n===0?'#1a8a30':RED.has(n)?'#c0202a':'#111';
+const nBg=n=>n===0?'#1a8a30':RED.has(n)?'#c0202a':'#111';
 
 const wCv=document.getElementById('wc'),wCtx=wCv.getContext('2d');
 const bCv=document.getElementById('bc'),bCtx=bCv.getContext('2d');
-const boardCv=document.getElementById('board-canvas'),brdCtx=boardCv.getContext('2d');
+const brd=document.getElementById('bc2'),bCtx2=brd.getContext('2d');
 
 let balance=1000,bets={},chip=1,spinning=false;
 let wAngle=0,ballAngle=0,ballR=0,wSpeed=0,ballSpd=0,ballOn=false,layout=[];
 
-function initSizes(){
-  // Use window dimensions directly — reliable on all browsers
-  const W=window.innerWidth, H=window.innerHeight;
-  const pad=6, gap=6;
+// ---- SIZING via ResizeObserver ----
+// ResizeObserver fires after the browser has fully laid out the DOM,
+// giving us accurate pixel dimensions. This is the only reliable way on mobile.
 
-  // Spin button height
-  const btnH=40;
-  // Wheel gets a square chunk of the left side
-  // Left col width: enough for the wheel. Right col gets the rest.
-  // Reserve ~28% of width for left col
-  const leftW=Math.floor(W*0.28)-pad-gap/2;
-  const wheelSz=Math.min(leftW, H-pad*2-btnH-gap);
-
-  // Size wheel canvases
-  wCv.width=wCv.height=wheelSz;
-  bCv.width=bCv.height=wheelSz;
-  wCv.style.width=wCv.style.height=wheelSz+'px';
-  bCv.style.width=bCv.style.height=wheelSz+'px';
-  document.getElementById('wheel-wrap').style.cssText='position:relative;width:'+wheelSz+'px;height:'+wheelSz+'px;';
-
-  // Spin button matches wheel width
-  const sb=document.getElementById('spin-btn');
-  sb.style.width=wheelSz+'px';
-
-  // Left col fixed width
-  document.getElementById('left-col').style.width=leftW+'px';
-
-  // Board canvas: fill its container using absolute positioning
-  // Container size = right col width × (total height minus UI rows)
-  const rightW=W-leftW-pad*2-gap;
-  // Estimate UI rows height: info ~36px, chips ~42px, msg ~16px, gaps ~12px
-  const uiH=36+42+16+12+pad*2;
-  const boardH=H-uiH;
-  boardCv.width=rightW;
-  boardCv.height=boardH;
-  boardCv.style.width=rightW+'px';
-  boardCv.style.height=boardH+'px';
+function sizeWheel(wrap){
+  const w=wrap.clientWidth, h=wrap.clientHeight;
+  // wheel column: leave room for spin button (40px) + gap (6px)
+  const sz=Math.max(40, Math.min(w, h-46));
+  wCv.width=wCv.height=sz;
+  bCv.width=bCv.height=sz;
+  wCv.style.width=wCv.style.height=sz+'px';
+  bCv.style.width=bCv.style.height=sz+'px';
+  document.getElementById('wheel-wrap').style.cssText='position:relative;width:'+sz+'px;height:'+sz+'px';
+  document.getElementById('spinbtn').style.width=sz+'px';
 }
+
+function sizeBoard(wrap){
+  const w=wrap.clientWidth, h=wrap.clientHeight;
+  if(w<1||h<1) return;
+  brd.width=w; brd.height=h;
+  brd.style.width=w+'px'; brd.style.height=h+'px';
+}
+
+const lcolObs=new ResizeObserver(entries=>{
+  sizeWheel(entries[0].target);
+  drawWheel(wAngle); drawBall(ballAngle,ballR);
+});
+lcolObs.observe(document.getElementById('lcol'));
+
+const boardObs=new ResizeObserver(entries=>{
+  sizeBoard(entries[0].target);
+  redrawBets();
+});
+boardObs.observe(document.getElementById('boardwrap'));
 
 // ---- WHEEL ----
 function drawWheel(a){
@@ -134,7 +128,7 @@ function drawWheel(a){
   for(let i=0;i<n;i++){
     const ang=a+i*sl-sl/2;
     ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,r-3,ang,ang+sl);ctx.closePath();
-    ctx.fillStyle=numBg(NUMS[i]);ctx.fill();
+    ctx.fillStyle=nBg(NUMS[i]);ctx.fill();
     ctx.strokeStyle='#222';ctx.lineWidth=0.4;ctx.stroke();
     ctx.save();ctx.rotate(ang+sl/2);ctx.translate(r-14,0);ctx.rotate(Math.PI/2);
     ctx.fillStyle='#fff';ctx.font='bold '+Math.max(6,Math.floor(sz/30))+'px Arial';
@@ -162,76 +156,82 @@ function drawBall(a,br){
 }
 
 // ---- BOARD ----
-// BUG FIX: each 2:1 cell gets a unique key using its row index ("col0","col1","col2")
+// Fixed logical coordinate system: board is always drawn in canvas pixel space.
+// brd.width/height are set to the wrapper's exact clientWidth/Height.
+// Hit test applies scale = canvas.width/rect.width to handle any CSS scaling.
+
 function computeLayout(){
   layout=[];
-  const W=boardCv.width,H=boardCv.height;
-  // Split: top 62% = number grid (3 rows), bottom 38% = outside bets
+  const W=brd.width, H=brd.height;
+  if(W<1||H<1)return;
+
+  // Top 62% = 3-row number grid. Bottom 38% = outside bets.
   const gridH=Math.floor(H*0.62);
-  const outsideY=gridH+2;
-  const outsideH=H-outsideY;  // exactly fills remaining space — no cut-off
+  const rowH=Math.floor(gridH/3);
+  // Recalculate gridH to be exactly 3*rowH so rows are flush
+  const actualGridH=rowH*3;
+  const outsideY=actualGridH+2;
+  const outsideH=H-outsideY; // fills exactly to bottom
 
   const zw=Math.floor(W*0.07);
   const twoW=Math.floor(W*0.065);
   const numAreaW=W-zw-twoW-6;
   const colW=Math.floor(numAreaW/12);
-  const rowH=Math.floor(gridH/3);
-  const x0=zw+3,y0=0;
+  const x0=zw+3;
 
   function rng(a,b){const r=[];for(let i=a;i<=b;i++)r.push(i);return r;}
 
   // Zero
-  layout.push({x:1,y:y0,w:zw-1,h:rowH*3,nums:[0],type:'straight',key:'straight|0',label:'0'});
+  layout.push({x:1,y:0,w:zw-1,h:rowH*3,nums:[0],type:'straight',key:'s0',label:'0'});
 
-  // Numbers
+  // Numbers 1-36
   for(let col=0;col<12;col++){
     for(let row=0;row<3;row++){
       const n=(2-row)+col*3+1;
-      layout.push({x:x0+col*colW,y:y0+row*rowH,w:colW-1,h:rowH-1,nums:[n],type:'straight',key:'straight|'+n,label:String(n)});
+      layout.push({x:x0+col*colW,y:row*rowH,w:colW-1,h:rowH-1,nums:[n],type:'straight',key:'s'+n,label:String(n)});
     }
   }
 
-  // 2:1 — UNIQUE KEY PER ROW using index i
+  // 2:1 — row index in key to make each cell unique
   const tx=x0+12*colW+2;
   for(let i=0;i<3;i++){
     const rowNums=[...Array(12)].map((_,c)=>(2-i)+c*3+1);
-    layout.push({x:tx,y:y0+i*rowH,w:twoW,h:rowH-1,nums:rowNums,type:'col',key:'col|'+i,label:'2:1'});
+    layout.push({x:tx,y:i*rowH,w:twoW,h:rowH-1,nums:rowNums,type:'col',key:'col'+i,label:'2:1'});
   }
 
-  // Outside bets — height fills exactly to bottom of canvas
+  // Outside bets
   const outside=[
-    {l:'1-12', ns:rng(1,12),  t:'dozen'},
-    {l:'13-24',ns:rng(13,24), t:'dozen'},
-    {l:'25-36',ns:rng(25,36), t:'dozen'},
-    {l:'1-18', ns:rng(1,18),  t:'even'},
+    {l:'1-12', ns:rng(1,12),t:'dozen'},
+    {l:'13-24',ns:rng(13,24),t:'dozen'},
+    {l:'25-36',ns:rng(25,36),t:'dozen'},
+    {l:'1-18', ns:rng(1,18),t:'even'},
     {l:'Even', ns:rng(2,36).filter(n=>n%2===0),t:'even'},
-    {l:'Red',  ns:[...RED],   t:'even'},
+    {l:'Red',  ns:[...RED],t:'even'},
     {l:'Black',ns:rng(1,36).filter(n=>!RED.has(n)),t:'even'},
     {l:'Odd',  ns:rng(1,35).filter(n=>n%2===1),t:'even'},
-    {l:'19-36',ns:rng(19,36), t:'even'},
+    {l:'19-36',ns:rng(19,36),t:'even'},
   ];
   const bw=Math.floor((W-2)/outside.length)-2;
   outside.forEach((b,i)=>{
-    layout.push({x:1+i*(bw+2),y:outsideY,w:bw,h:outsideH,nums:b.ns,type:b.t,key:b.t+'|'+b.l,label:b.l});
+    layout.push({x:1+i*(bw+2),y:outsideY,w:bw,h:outsideH,nums:b.ns,type:b.t,key:'out'+i,label:b.l});
   });
 }
 
 function drawBoard(){
   computeLayout();
-  const ctx=brdCtx,W=boardCv.width,H=boardCv.height;
+  const ctx=bCtx2,W=brd.width,H=brd.height;
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle='#0d5c2a';ctx.fillRect(0,0,W,H);
   for(const c of layout){
     let bg='#0a4a20';
-    if(c.type==='straight')bg=numBg(c.nums[0]);
+    if(c.type==='straight')bg=nBg(c.nums[0]);
     else if(c.label==='Red')bg='#8a1515';
     else if(c.label==='Black')bg='#111';
     ctx.fillStyle=bg;
     ctx.beginPath();ctx.roundRect(c.x,c.y,c.w,c.h,2);ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=0.5;ctx.stroke();
-    ctx.fillStyle='#fff';
     const fs=Math.max(7,Math.min(c.w,c.h)*0.38);
-    ctx.font='bold '+fs+'px Georgia';
+    ctx.fillStyle='#fff';ctx.font='bold '+fs+'px Georgia';
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(c.label,c.x+c.w/2,c.y+c.h/2);
   }
@@ -241,145 +241,120 @@ function redrawBets(){
   drawBoard();
   Object.entries(bets).forEach(([k,amt])=>{
     if(!amt)return;
-    const cell=layout.find(l=>l.key===k);
-    if(!cell)return;
-    const cx=cell.x+cell.w/2,cy=cell.y+cell.h/2;
-    const r=Math.max(6,Math.min(cell.w,cell.h)*0.3);
-    brdCtx.beginPath();brdCtx.arc(cx,cy,r,0,Math.PI*2);
-    brdCtx.fillStyle=amt>=100?'#1a7a22':amt>=25?'#1a44aa':amt>=5?'#aa2222':'#555';
-    brdCtx.fill();
-    brdCtx.strokeStyle='#f0d060';brdCtx.lineWidth=1.5;brdCtx.stroke();
-    brdCtx.fillStyle='#fff';
-    brdCtx.font='bold '+Math.max(7,r*0.65)+'px Arial';
-    brdCtx.textAlign='center';brdCtx.textBaseline='middle';
-    brdCtx.fillText('$'+amt,cx,cy);
+    const c=layout.find(l=>l.key===k);
+    if(!c)return;
+    const cx=c.x+c.w/2,cy=c.y+c.h/2,r=Math.max(6,Math.min(c.w,c.h)*0.3);
+    bCtx2.beginPath();bCtx2.arc(cx,cy,r,0,Math.PI*2);
+    bCtx2.fillStyle=amt>=100?'#1a7a22':amt>=25?'#1a44aa':amt>=5?'#aa2222':'#555';
+    bCtx2.fill();
+    bCtx2.strokeStyle='#f0d060';bCtx2.lineWidth=1.5;bCtx2.stroke();
+    bCtx2.fillStyle='#fff';bCtx2.font='bold '+Math.max(7,r*0.65)+'px Arial';
+    bCtx2.textAlign='center';bCtx2.textBaseline='middle';
+    bCtx2.fillText('$'+amt,cx,cy);
   });
 }
 
-function totalBet(){return Object.values(bets).reduce((a,b)=>a+b,0);}
-function updateUI(){
+function totBet(){return Object.values(bets).reduce((a,b)=>a+b,0);}
+function updUI(){
   document.getElementById('bal').textContent='$'+balance;
-  document.getElementById('betval').textContent='$'+totalBet();
+  document.getElementById('betv').textContent='$'+totBet();
 }
-function setMsg(t){document.getElementById('msg-bar').textContent=t;}
+function msg(t){document.getElementById('msgbar').textContent=t;}
 
-// HIT TEST — board canvas.width === declared pixel width, so coords are 1:1 with canvas pixels
-function handleBoardTap(clientX,clientY){
+// HIT TEST — always scale from displayed rect to canvas logical coords
+function tapBoard(cx,cy){
   if(spinning)return;
-  const rect=boardCv.getBoundingClientRect();
-  // Scale: canvas logical px / displayed px
-  const scaleX=boardCv.width/rect.width;
-  const scaleY=boardCv.height/rect.height;
-  const x=(clientX-rect.left)*scaleX;
-  const y=(clientY-rect.top)*scaleY;
+  const rect=brd.getBoundingClientRect();
+  const sx=brd.width/rect.width, sy=brd.height/rect.height;
+  const x=(cx-rect.left)*sx, y=(cy-rect.top)*sy;
   for(const c of layout){
     if(x>=c.x&&x<c.x+c.w&&y>=c.y&&y<c.y+c.h){
-      if(totalBet()+chip>balance){setMsg('Not enough balance!');return;}
+      if(totBet()+chip>balance){msg('Not enough balance!');return;}
       bets[c.key]=(bets[c.key]||0)+chip;
-      redrawBets();updateUI();
-      setMsg('$'+bets[c.key]+' on '+c.label);
+      redrawBets();updUI();msg('$'+bets[c.key]+' on '+c.label);
       return;
     }
   }
 }
 
-boardCv.addEventListener('click',e=>handleBoardTap(e.clientX,e.clientY));
-boardCv.addEventListener('touchend',e=>{
-  e.preventDefault();
-  handleBoardTap(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
-},{passive:false});
+brd.addEventListener('click',e=>tapBoard(e.clientX,e.clientY));
+brd.addEventListener('touchend',e=>{e.preventDefault();tapBoard(e.changedTouches[0].clientX,e.changedTouches[0].clientY);},{passive:false});
 
 document.querySelectorAll('.chip').forEach(ch=>{
   function sel(){
     document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
-    ch.classList.add('sel');chip=parseInt(ch.dataset.v);
-    setMsg('Chip $'+chip+' selected');
+    ch.classList.add('sel');chip=parseInt(ch.dataset.v);msg('Chip $'+chip+' selected');
   }
   ch.addEventListener('click',sel);
   ch.addEventListener('touchend',e=>{e.preventDefault();sel();},{passive:false});
 });
 
-document.getElementById('clear-btn').addEventListener('click',()=>{if(!spinning){bets={};redrawBets();updateUI();setMsg('Bets cleared');}});
-document.getElementById('clear-btn').addEventListener('touchend',e=>{e.preventDefault();if(!spinning){bets={};redrawBets();updateUI();setMsg('Bets cleared');}},{passive:false});
+document.getElementById('clrbtn').addEventListener('click',()=>{if(!spinning){bets={};redrawBets();updUI();msg('Bets cleared');}});
+document.getElementById('clrbtn').addEventListener('touchend',e=>{e.preventDefault();if(!spinning){bets={};redrawBets();updUI();msg('Bets cleared');}},{passive:false});
 
-function triggerSpin(){
+function doSpin(){
   if(spinning)return;
-  const tb=totalBet();
-  if(tb===0){setMsg('Place at least one bet first!');return;}
-  balance-=tb;updateUI();doSpin(tb);
-}
-document.getElementById('spin-btn').addEventListener('click',triggerSpin);
-document.getElementById('spin-btn').addEventListener('touchend',e=>{e.preventDefault();triggerSpin();},{passive:false});
-
-function doSpin(staked){
+  const tb=totBet();
+  if(!tb){msg('Place a bet first!');return;}
+  balance-=tb;updUI();
   spinning=true;ballOn=true;
-  document.getElementById('spin-btn').disabled=true;
+  document.getElementById('spinbtn').disabled=true;
   const winIdx=Math.floor(Math.random()*NUMS.length);
   const winNum=NUMS[winIdx];
   const sl=(Math.PI*2)/NUMS.length;
   const sz=wCv.width;
-  const outerR=(sz/2-4)*0.87;
-  const innerR=(sz/2-4)*0.70;
+  const outerR=(sz/2-4)*0.87, innerR=(sz/2-4)*0.70;
   wSpeed=0.09;ballSpd=-0.17;ballR=outerR;ballAngle=0;
-  let tick=0,settled=false;
+  let tick=0,done=false;
   function frame(){
     tick++;wAngle+=wSpeed;
     if(tick>120){wSpeed*=0.994;ballSpd*=0.989;ballR=Math.max(innerR,ballR-(outerR-innerR)/200);}
-    if(tick>120&&Math.abs(ballSpd)<0.005&&!settled){
-      settled=true;ballSpd=0;
-      ballAngle=wAngle+winIdx*sl+sl/2;
-      ballR=innerR;
+    if(tick>120&&Math.abs(ballSpd)<0.005&&!done){
+      done=true;ballSpd=0;
+      ballAngle=wAngle+winIdx*sl+sl/2;ballR=innerR;
       drawWheel(wAngle);drawBall(ballAngle,ballR);
-      setTimeout(()=>finish(winNum,staked),700);
-      return;
+      setTimeout(()=>finish(winNum,tb),700);return;
     }
-    if(!settled)ballAngle+=ballSpd;
+    if(!done)ballAngle+=ballSpd;
     drawWheel(wAngle);drawBall(ballAngle,ballR);
-    if(!settled||wSpeed>0.001)requestAnimationFrame(frame);
+    if(!done||wSpeed>0.001)requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 }
 
 function finish(num,staked){
-  spinning=false;
-  document.getElementById('spin-btn').disabled=false;
-  let winnings=0;
+  spinning=false;document.getElementById('spinbtn').disabled=false;
+  let win=0;
   Object.entries(bets).forEach(([k,amt])=>{
-    const cell=layout.find(l=>l.key===k);
-    if(!cell||!cell.nums.includes(num))return;
-    const pay=cell.type==='straight'?35:cell.type==='col'||cell.type==='dozen'?2:1;
-    winnings+=amt*(pay+1);
+    const c=layout.find(l=>l.key===k);
+    if(!c||!c.nums.includes(num))return;
+    const pay=c.type==='straight'?35:c.type==='col'||c.type==='dozen'?2:1;
+    win+=amt*(pay+1);
   });
-  balance+=winnings;updateUI();
-  const isRed=RED.has(num),isGreen=num===0;
-  document.getElementById('rnum').style.color=isGreen?'#2ecc71':isRed?'#e74c3c':'#bbb';
+  balance+=win;updUI();
+  const isR=RED.has(num),isG=num===0;
+  document.getElementById('rnum').style.color=isG?'#2ecc71':isR?'#e74c3c':'#bbb';
   document.getElementById('rnum').textContent=num;
-  const col=isGreen?'Green':isRed?'Red':'Black';
-  if(winnings>0){
-    document.getElementById('winval').textContent='+'+'$'+(winnings-staked);
-    document.getElementById('winval').style.color='#2ecc71';
-    document.getElementById('rmsg').textContent='Won $'+winnings+'! ('+col+' '+num+')';
-    setMsg('You won $'+winnings+'!');
+  const col=isG?'Green':isR?'Red':'Black';
+  if(win>0){
+    document.getElementById('winv').textContent='+'+'$'+(win-staked);
+    document.getElementById('winv').style.color='#2ecc71';
+    document.getElementById('rmsg').textContent='Won $'+win+'! ('+col+' '+num+')';
+    msg('You won $'+win+'!');
   }else{
-    document.getElementById('winval').textContent='-$'+staked;
-    document.getElementById('winval').style.color='#e74c3c';
+    document.getElementById('winv').textContent='-$'+staked;
+    document.getElementById('winv').style.color='#e74c3c';
     document.getElementById('rmsg').textContent=col+' '+num+' — no win';
-    setMsg('No win. Try again!');
+    msg('No win. Try again!');
   }
   bets={};redrawBets();
-  if(balance<=0)setMsg('Out of chips! Refresh to restart.');
+  if(balance<=0)msg('Out of chips! Refresh to restart.');
 }
 
-function init(){
-  initSizes();
-  drawWheel(0);
-  redrawBets();
-  updateUI();
-}
+document.getElementById('spinbtn').addEventListener('click',doSpin);
+document.getElementById('spinbtn').addEventListener('touchend',e=>{e.preventDefault();doSpin();},{passive:false});
 
-init();
-window.addEventListener('resize',init);
-if(screen.orientation)screen.orientation.addEventListener('change',()=>setTimeout(init,200));
+updUI();
 </script>
 </body>
 </html>
