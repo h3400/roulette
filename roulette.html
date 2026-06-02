@@ -13,11 +13,11 @@ html,body{width:100%;height:100%;background:#0a3d1f;font-family:Georgia,serif;us
 
 #game{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:row;gap:6px;padding:6px;overflow:hidden;}
 
-#left-col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;flex-shrink:0;}
+#left-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;flex-shrink:0;min-width:0;}
 #wheel-wrap{position:relative;}
 #wc,#bc{display:block;border-radius:50%;}
 #bc{position:absolute;top:0;left:0;pointer-events:none;}
-#spin-btn{background:#f0d060;color:#1a0a00;border:none;border-radius:20px;font-family:Georgia,serif;font-weight:bold;font-size:14px;cursor:pointer;letter-spacing:1px;padding:10px 0;display:block;-webkit-appearance:none;}
+#spin-btn{background:#f0d060;color:#1a0a00;border:none;border-radius:20px;font-family:Georgia,serif;font-weight:bold;font-size:14px;cursor:pointer;letter-spacing:1px;padding:10px 0;display:block;-webkit-appearance:none;flex-shrink:0;min-height:38px;z-index:5;}
 #spin-btn:disabled{background:#555;color:#888;}
 
 #right-col{flex:1;display:flex;flex-direction:column;gap:4px;overflow:hidden;min-width:0;}
@@ -85,42 +85,32 @@ let balance=1000,bets={},chip=1,spinning=false;
 let wAngle=0,ballAngle=0,ballR=0,wSpeed=0,ballSpd=0,ballOn=false,layout=[];
 
 function initSizes(){
-  // Use window dimensions directly — reliable on all browsers
   const W=window.innerWidth, H=window.innerHeight;
   const pad=6, gap=6;
 
-  // Spin button height
-  const btnH=40;
-  // Wheel gets a square chunk of the left side
-  // Left col width: enough for the wheel. Right col gets the rest.
-  // Reserve ~28% of width for left col
-  const leftW=Math.floor(W*0.28)-pad-gap/2;
-  const wheelSz=Math.min(leftW, H-pad*2-btnH-gap);
+  // Keep the left side small enough that the wheel + spin button always fit.
+  const leftW=Math.max(115, Math.floor(W*0.28)-pad-gap/2);
+  const btnH=42;
+  const wheelSz=Math.max(100, Math.min(leftW, H-pad*2-btnH-gap-4));
 
-  // Size wheel canvases
   wCv.width=wCv.height=wheelSz;
   bCv.width=bCv.height=wheelSz;
   wCv.style.width=wCv.style.height=wheelSz+'px';
   bCv.style.width=bCv.style.height=wheelSz+'px';
   document.getElementById('wheel-wrap').style.cssText='position:relative;width:'+wheelSz+'px;height:'+wheelSz+'px;';
 
-  // Spin button matches wheel width
   const sb=document.getElementById('spin-btn');
   sb.style.width=wheelSz+'px';
+  sb.style.display='block';
 
-  // Left col fixed width
   document.getElementById('left-col').style.width=leftW+'px';
 
-  // Board canvas: fill its container using absolute positioning
-  // Container size = right col width × (total height minus UI rows)
-  const rightW=W-leftW-pad*2-gap;
-  // Estimate UI rows height: info ~36px, chips ~42px, msg ~16px, gaps ~12px
-  const uiH=36+42+16+12+pad*2;
-  const boardH=H-uiH;
-  boardCv.width=rightW;
-  boardCv.height=boardH;
-  boardCv.style.width=rightW+'px';
-  boardCv.style.height=boardH+'px';
+  // IMPORTANT FIX:
+  // Size the board canvas from its real flexbox container, not from an estimate.
+  // This prevents the lower red/black/odd/etc. row from being cut off.
+  const rect=boardCv.getBoundingClientRect();
+  boardCv.width=Math.max(1, Math.floor(rect.width));
+  boardCv.height=Math.max(1, Math.floor(rect.height));
 }
 
 // ---- WHEEL ----
@@ -166,10 +156,10 @@ function drawBall(a,br){
 function computeLayout(){
   layout=[];
   const W=boardCv.width,H=boardCv.height;
-  // Split: top 62% = number grid (3 rows), bottom 38% = outside bets
+
   const gridH=Math.floor(H*0.62);
-  const outsideY=gridH+2;
-  const outsideH=H-outsideY;  // exactly fills remaining space — no cut-off
+  const outsideY=gridH+3;
+  const outsideH=H-outsideY;
 
   const zw=Math.floor(W*0.07);
   const twoW=Math.floor(W*0.065);
@@ -180,39 +170,63 @@ function computeLayout(){
 
   function rng(a,b){const r=[];for(let i=a;i<=b;i++)r.push(i);return r;}
 
-  // Zero
-  layout.push({x:1,y:y0,w:zw-1,h:rowH*3,nums:[0],type:'straight',key:'straight|0',label:'0'});
+  layout.push({x:1,y:y0,w:zw-1,h:rowH*3,nums:[0],type:'straight',key:'straight|0',label:'0',display:'0'});
 
-  // Numbers
   for(let col=0;col<12;col++){
     for(let row=0;row<3;row++){
       const n=(2-row)+col*3+1;
-      layout.push({x:x0+col*colW,y:y0+row*rowH,w:colW-1,h:rowH-1,nums:[n],type:'straight',key:'straight|'+n,label:String(n)});
+      layout.push({x:x0+col*colW,y:y0+row*rowH,w:colW-1,h:rowH-1,nums:[n],type:'straight',key:'straight|'+n,label:String(n),display:String(n)});
     }
   }
 
-  // 2:1 — UNIQUE KEY PER ROW using index i
+  // FIX: each 2:1 row has a unique key AND a unique label for messages.
+  // The board still visually displays "2:1" on all three.
   const tx=x0+12*colW+2;
+  const colNames=['Top row','Middle row','Bottom row'];
   for(let i=0;i<3;i++){
     const rowNums=[...Array(12)].map((_,c)=>(2-i)+c*3+1);
-    layout.push({x:tx,y:y0+i*rowH,w:twoW,h:rowH-1,nums:rowNums,type:'col',key:'col|'+i,label:'2:1'});
+    layout.push({
+      x:tx,y:y0+i*rowH,w:twoW,h:rowH-1,
+      nums:rowNums,type:'col',key:'col|'+i,
+      label:'2:1 '+colNames[i],
+      display:'2:1'
+    });
   }
 
-  // Outside bets — height fills exactly to bottom of canvas
-  const outside=[
-    {l:'1-12', ns:rng(1,12),  t:'dozen'},
-    {l:'13-24',ns:rng(13,24), t:'dozen'},
-    {l:'25-36',ns:rng(25,36), t:'dozen'},
-    {l:'1-18', ns:rng(1,18),  t:'even'},
-    {l:'Even', ns:rng(2,36).filter(n=>n%2===0),t:'even'},
-    {l:'Red',  ns:[...RED],   t:'even'},
-    {l:'Black',ns:rng(1,36).filter(n=>!RED.has(n)),t:'even'},
-    {l:'Odd',  ns:rng(1,35).filter(n=>n%2===1),t:'even'},
-    {l:'19-36',ns:rng(19,36), t:'even'},
+  // FIX: split outside bets into two rows so red/black/odd/etc. are fully visible.
+  const dozenH=Math.max(18, Math.floor(outsideH*0.46));
+  const lowerY=outsideY+dozenH+2;
+  const lowerH=Math.max(18, H-lowerY);
+
+  const dozens=[
+    {l:'1-12', ns:rng(1,12)},
+    {l:'13-24',ns:rng(13,24)},
+    {l:'25-36',ns:rng(25,36)}
   ];
-  const bw=Math.floor((W-2)/outside.length)-2;
-  outside.forEach((b,i)=>{
-    layout.push({x:1+i*(bw+2),y:outsideY,w:bw,h:outsideH,nums:b.ns,type:b.t,key:b.t+'|'+b.l,label:b.l});
+
+  const dozenW=Math.floor((W-4)/3);
+  dozens.forEach((b,i)=>{
+    layout.push({
+      x:1+i*dozenW,y:outsideY,w:dozenW-2,h:dozenH,
+      nums:b.ns,type:'dozen',key:'dozen|'+b.l,label:b.l,display:b.l
+    });
+  });
+
+  const lower=[
+    {l:'1-18', ns:rng(1,18)},
+    {l:'Even', ns:rng(2,36).filter(n=>n%2===0)},
+    {l:'Red',  ns:[...RED]},
+    {l:'Black',ns:rng(1,36).filter(n=>!RED.has(n))},
+    {l:'Odd',  ns:rng(1,35).filter(n=>n%2===1)},
+    {l:'19-36',ns:rng(19,36)}
+  ];
+
+  const lowerW=Math.floor((W-2)/lower.length);
+  lower.forEach((b,i)=>{
+    layout.push({
+      x:1+i*lowerW,y:lowerY,w:lowerW-2,h:lowerH,
+      nums:b.ns,type:'even',key:'even|'+b.l,label:b.l,display:b.l
+    });
   });
 }
 
@@ -233,7 +247,7 @@ function drawBoard(){
     const fs=Math.max(7,Math.min(c.w,c.h)*0.38);
     ctx.font='bold '+fs+'px Georgia';
     ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(c.label,c.x+c.w/2,c.y+c.h/2);
+    ctx.fillText(c.display||c.label,c.x+c.w/2,c.y+c.h/2);
   }
 }
 
@@ -311,32 +325,75 @@ function triggerSpin(){
 document.getElementById('spin-btn').addEventListener('click',triggerSpin);
 document.getElementById('spin-btn').addEventListener('touchend',e=>{e.preventDefault();triggerSpin();},{passive:false});
 
+function easeOutCubic(t){
+  return 1-Math.pow(1-t,3);
+}
+
+function easeInCubic(t){
+  return t*t*t;
+}
+
 function doSpin(staked){
-  spinning=true;ballOn=true;
+  spinning=true;
+  ballOn=true;
   document.getElementById('spin-btn').disabled=true;
+
   const winIdx=Math.floor(Math.random()*NUMS.length);
   const winNum=NUMS[winIdx];
   const sl=(Math.PI*2)/NUMS.length;
   const sz=wCv.width;
   const outerR=(sz/2-4)*0.87;
   const innerR=(sz/2-4)*0.70;
-  wSpeed=0.09;ballSpd=-0.17;ballR=outerR;ballAngle=0;
-  let tick=0,settled=false;
-  function frame(){
-    tick++;wAngle+=wSpeed;
-    if(tick>120){wSpeed*=0.994;ballSpd*=0.989;ballR=Math.max(innerR,ballR-(outerR-innerR)/200);}
-    if(tick>120&&Math.abs(ballSpd)<0.005&&!settled){
-      settled=true;ballSpd=0;
-      ballAngle=wAngle+winIdx*sl+sl/2;
+
+  // IMPORTANT FIX:
+  // The old version animated freely, then snapped ballAngle directly to the winning pocket.
+  // This version chooses the winning pocket first and smoothly animates BOTH the wheel
+  // and the ball into that exact final alignment, so there is no teleport at the end.
+  const startW=wAngle;
+  const startBall=ballAngle || 0;
+  const startR=outerR;
+
+  const wheelSpins=5+Math.random()*1.5;
+  const targetW=startW+(Math.PI*2*wheelSpins);
+
+  // In drawWheel(), pocket i is centered at wheel angle + i*slice.
+  const targetPocketAngle=targetW+(winIdx*sl);
+
+  // Make the ball take a smooth counter-clockwise route, then end exactly on the pocket.
+  let targetBall=targetPocketAngle;
+  while(targetBall>startBall) targetBall-=Math.PI*2;
+  targetBall-=Math.PI*2*4;
+
+  const duration=4300;
+  const startTime=performance.now();
+
+  function frame(now){
+    const t=Math.min(1,(now-startTime)/duration);
+    const wheelT=easeOutCubic(t);
+    const ballT=easeOutCubic(t);
+    const dropT=easeInCubic(t);
+
+    wAngle=startW+(targetW-startW)*wheelT;
+    ballAngle=startBall+(targetBall-startBall)*ballT;
+    ballR=startR+(innerR-startR)*dropT;
+
+    drawWheel(wAngle);
+    drawBall(ballAngle,ballR);
+
+    if(t<1){
+      requestAnimationFrame(frame);
+    }else{
+      // Lock the final values exactly where the animation already ended.
+      // This redraw is visually identical to the prior frame, so no jump occurs.
+      wAngle=targetW;
+      ballAngle=targetBall;
       ballR=innerR;
-      drawWheel(wAngle);drawBall(ballAngle,ballR);
-      setTimeout(()=>finish(winNum,staked),700);
-      return;
+      drawWheel(wAngle);
+      drawBall(ballAngle,ballR);
+      setTimeout(()=>finish(winNum,staked),450);
     }
-    if(!settled)ballAngle+=ballSpd;
-    drawWheel(wAngle);drawBall(ballAngle,ballR);
-    if(!settled||wSpeed>0.001)requestAnimationFrame(frame);
   }
+
   requestAnimationFrame(frame);
 }
 
@@ -372,6 +429,11 @@ function finish(num,staked){
 
 function init(){
   initSizes();
+  // If the browser has not finished flex layout yet, retry once on the next frame.
+  if(boardCv.width<=1 || boardCv.height<=1){
+    requestAnimationFrame(init);
+    return;
+  }
   drawWheel(0);
   redrawBets();
   updateUI();
