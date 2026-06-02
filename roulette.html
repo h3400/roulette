@@ -325,32 +325,75 @@ function triggerSpin(){
 document.getElementById('spin-btn').addEventListener('click',triggerSpin);
 document.getElementById('spin-btn').addEventListener('touchend',e=>{e.preventDefault();triggerSpin();},{passive:false});
 
+function easeOutCubic(t){
+  return 1-Math.pow(1-t,3);
+}
+
+function easeInCubic(t){
+  return t*t*t;
+}
+
 function doSpin(staked){
-  spinning=true;ballOn=true;
+  spinning=true;
+  ballOn=true;
   document.getElementById('spin-btn').disabled=true;
+
   const winIdx=Math.floor(Math.random()*NUMS.length);
   const winNum=NUMS[winIdx];
   const sl=(Math.PI*2)/NUMS.length;
   const sz=wCv.width;
   const outerR=(sz/2-4)*0.87;
   const innerR=(sz/2-4)*0.70;
-  wSpeed=0.09;ballSpd=-0.17;ballR=outerR;ballAngle=0;
-  let tick=0,settled=false;
-  function frame(){
-    tick++;wAngle+=wSpeed;
-    if(tick>120){wSpeed*=0.994;ballSpd*=0.989;ballR=Math.max(innerR,ballR-(outerR-innerR)/200);}
-    if(tick>120&&Math.abs(ballSpd)<0.005&&!settled){
-      settled=true;ballSpd=0;
-      ballAngle=wAngle+winIdx*sl+sl/2;
+
+  // IMPORTANT FIX:
+  // The old version animated freely, then snapped ballAngle directly to the winning pocket.
+  // This version chooses the winning pocket first and smoothly animates BOTH the wheel
+  // and the ball into that exact final alignment, so there is no teleport at the end.
+  const startW=wAngle;
+  const startBall=ballAngle || 0;
+  const startR=outerR;
+
+  const wheelSpins=5+Math.random()*1.5;
+  const targetW=startW+(Math.PI*2*wheelSpins);
+
+  // In drawWheel(), pocket i is centered at wheel angle + i*slice.
+  const targetPocketAngle=targetW+(winIdx*sl);
+
+  // Make the ball take a smooth counter-clockwise route, then end exactly on the pocket.
+  let targetBall=targetPocketAngle;
+  while(targetBall>startBall) targetBall-=Math.PI*2;
+  targetBall-=Math.PI*2*4;
+
+  const duration=4300;
+  const startTime=performance.now();
+
+  function frame(now){
+    const t=Math.min(1,(now-startTime)/duration);
+    const wheelT=easeOutCubic(t);
+    const ballT=easeOutCubic(t);
+    const dropT=easeInCubic(t);
+
+    wAngle=startW+(targetW-startW)*wheelT;
+    ballAngle=startBall+(targetBall-startBall)*ballT;
+    ballR=startR+(innerR-startR)*dropT;
+
+    drawWheel(wAngle);
+    drawBall(ballAngle,ballR);
+
+    if(t<1){
+      requestAnimationFrame(frame);
+    }else{
+      // Lock the final values exactly where the animation already ended.
+      // This redraw is visually identical to the prior frame, so no jump occurs.
+      wAngle=targetW;
+      ballAngle=targetBall;
       ballR=innerR;
-      drawWheel(wAngle);drawBall(ballAngle,ballR);
-      setTimeout(()=>finish(winNum,staked),700);
-      return;
+      drawWheel(wAngle);
+      drawBall(ballAngle,ballR);
+      setTimeout(()=>finish(winNum,staked),450);
     }
-    if(!settled)ballAngle+=ballSpd;
-    drawWheel(wAngle);drawBall(ballAngle,ballR);
-    if(!settled||wSpeed>0.001)requestAnimationFrame(frame);
   }
+
   requestAnimationFrame(frame);
 }
 
